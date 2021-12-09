@@ -1,5 +1,3 @@
-// This demo is public domain, or MPLv2 if you prefer.
-
 package main
 
 import (
@@ -13,6 +11,8 @@ import (
 	"github.com/rivo/tview"
 
 	logrus "github.com/sirupsen/logrus"
+	//ac "github.com/binRick/abduco-dev/go/abduco"
+	ac "github.com/binRick/abduco-dev/go/abducoctl"
 )
 
 var l = logrus.New()
@@ -41,6 +41,11 @@ var (
 )
 
 func init() {
+	SESSIONS, err := ac.List()
+	if err != nil {
+		panic(err)
+	}
+
 	l.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
 		ForceColors:   true,
@@ -56,7 +61,7 @@ func init() {
 	}
 
 	l.WithFields(logrus.Fields{
-		"log": LOG_FILE,
+		"sessions": SESSIONS,
 	}).Info("Terminal UI Started")
 }
 
