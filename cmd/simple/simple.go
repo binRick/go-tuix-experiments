@@ -78,6 +78,7 @@ func run() error {
 
 	wform.AddButton("Find Command", func() {
 		cmd := fmt.Sprintf(`find /etc|head -n 10; echo NO_ERR >&2`)
+		cmd = fmt.Sprintf(`journalctl -f`)
 		cmd_mutex.Lock()
 		defer cmd_mutex.Unlock()
 		cur_cmd = cmd
@@ -142,8 +143,8 @@ func run() error {
 		app.Draw()
 	})
 
-	tv.SetWordWrap(true).SetDynamicColors(true).SetScrollable(false).SetBorderPadding(1, 1, 1, 1)
-	tvr.SetWordWrap(true).SetDynamicColors(true).SetScrollable(false).SetBorderPadding(1, 1, 1, 1)
+	tv.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
+	tvr.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
 
 	menu_bar.SetClient(wform, true)
 	win3.SetClient(_list, true)
