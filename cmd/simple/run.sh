@@ -14,7 +14,7 @@ he() {
 }
 
 trap he EXIT
-while :; do 
-eval $BIN ${@:-} 2>.err || sleep 1
-sleep 1
-done
+#while :; do 
+eval $BIN ${@:-} 2>.err
+#sleep 1
+#done
