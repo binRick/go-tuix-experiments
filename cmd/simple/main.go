@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/k0kubun/pp"
 	"github.com/millerlogic/tuix"
 	"github.com/rivo/tview"
 	logrus "github.com/sirupsen/logrus"
@@ -57,7 +58,18 @@ func monitor_sessions() {
 		"dur": time.Since(started),
 	}).Info(fmt.Sprintf("%d Sessions Loaded", len(sessions)))
 }
+
+var monitor_once sync.Once
+
 func init() {
+	app.SetMouseCapture(func(event *tcell.EventMouse, action tview.MouseAction) (*tcell.EventMouse, tview.MouseAction) {
+		if false {
+			l.WithFields(logrus.Fields{
+				"event": pp.Sprintf(`%s`, event),
+			}).Info("Mouse Capture")
+		}
+		return event, action
+	})
 	l.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
 		ForceColors:   true,
@@ -74,12 +86,14 @@ func init() {
 	l.WithFields(logrus.Fields{
 		"sessions": sessions,
 	}).Info("Terminal UI Started")
-	go func() {
-		for {
-			monitor_sessions()
-			time.Sleep(5000 * time.Millisecond)
-		}
-	}()
+	monitor_once.Do(func() {
+		go func() {
+			for {
+				monitor_sessions()
+				time.Sleep(5000 * time.Millisecond)
+			}
+		}()
+	})
 }
 
 func run() error {

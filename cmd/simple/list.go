@@ -24,6 +24,9 @@ func init() {
 			"session": mainText,
 		}).Info(fmt.Sprintf(`Tail Log File`))
 		go tail_log(mainText)
+		if false {
+			fmt.Fprintf(os.Stderr, "%s\n", pp.Sprintf(`%s`, app))
+		}
 	})
 	_list.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
 		//	pp.Println(`CHANGED BUT NOT SELECTED ITEM`, index, mainText, secondaryText, shortcut)

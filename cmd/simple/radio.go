@@ -8,7 +8,7 @@ import (
 	logrus "github.com/sirupsen/logrus"
 )
 
-var radioButtons = NewRadioButtons([]string{"", "", "", "", ""})
+var radioButtons = NewRadioButtons([]string{"📠  🔄   ✅", "🎰   🆘    🛠", "📛  🌀", "🔵   📀", "🔥   🌊", "💣   🌈"})
 
 type RadioButtons struct {
 	*tview.Box
@@ -83,6 +83,7 @@ func (r *RadioButtons) MouseHandler() func(action tview.MouseAction, event *tcel
 			l.WithFields(logrus.Fields{
 				"qty": len(r.options),
 				"cur": r.currentOption,
+				"x":   x, "y": y,
 			}).Info("RadioButtons LeftClick")
 		}
 		return

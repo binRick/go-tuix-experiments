@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/nxadm/tail"
@@ -37,11 +38,17 @@ func tail_log(session string) {
 		panic(err)
 	}
 	for line := range tailer.Lines {
-		l.WithFields(logrus.Fields{
-			"bytes": len(line.Text),
-			"log":   log_file,
-		}).Info(fmt.Sprintf(`TAIL- %d bytes: %s`, len(line.Text), line.Text))
-		fmt.Fprintf(log_view, "%s> %s\n", session, line.Text)
-		//	log_view.ScrollToEnd()
+		if len(line.Text) < 1 {
+			continue
+		}
+		if false {
+			l.WithFields(logrus.Fields{
+				"bytes": len(line.Text),
+				"log":   log_file,
+			}).Info(fmt.Sprintf(`TAIL- %d bytes: %s`, len(line.Text), line.Text))
+		}
+		if len(strings.Trim(line.Text, ` `)) > 0 {
+			fmt.Fprintf(log_view, "%s> %s\n", session, line.Text)
+		}
 	}
 }
