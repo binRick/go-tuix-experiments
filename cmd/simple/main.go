@@ -9,50 +9,61 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/millerlogic/tuix"
 	"github.com/rivo/tview"
-
 	logrus "github.com/sirupsen/logrus"
+
 	//ac "github.com/binRick/abduco-dev/go/abduco"
+	//ac "github.com/binRick/abduco-dev/go/abducoctl"
 	ac "github.com/binRick/abduco-dev/go/abducoctl"
+	//ac1 "github.com/binRick/abduco-dev/go/abducoctl"
+	//ac1 "github.com/binRick/abduco-dev/go/abducoctl"
 )
 
 var l = logrus.New()
 var LOG_FILE = `/tmp/logrus.log`
 var cmd_mutex sync.Mutex
+var radio_mutex sync.Mutex
 var DEFAULT_CMD = fmt.Sprintf(`date >&1 ; date >&2`)
 var cur_cmd = DEFAULT_CMD
-var _list = tview.NewList().
-	AddItem("List item 1", "Some explanatory text", 'a', nil).
-	AddItem("List item 2", "Some explanatory text", 'b', nil).
-	AddItem("List item 3", "Some explanatory text", 'c', nil).
-	AddItem("List item 4", "Some explanatory text", 'd', nil).
-	AddItem("Quit", "Press to exit", 'q', func() {
-		app.Stop()
-	})
 
 var (
-	app      = tview.NewApplication()
-	desktop  = tuix.NewDesktop()
-	wform    = tview.NewForm()
-	wform2   = tview.NewForm()
-	wform2r  = tview.NewForm()
-	tv       = tview.NewTextView()
-	tvr      = tview.NewTextView()
-	menu_bar = tuix.NewWindow().SetAutoPosition(false).SetTitle("Buttons").SetBorder(true)
+	app     = tview.NewApplication()
+	desktop = tuix.NewDesktop()
+	wform2  = tview.NewForm()
+	wform2r = tview.NewForm()
+	tv      = tview.NewTextView()
+	tvr     = tview.NewTextView()
 )
+var sessions = []ac.AbducoSession{}
+var sessions_mt sync.Mutex
 
-func init() {
+func get_sessions() []ac.AbducoSession {
+	sessions_mt.Lock()
+	defer sessions_mt.Unlock()
+	sess := sessions
+	return sess
+}
+func monitor_sessions() {
+	sessions_mt.Lock()
+	started := time.Now()
 	SESSIONS, err := ac.List()
 	if err != nil {
 		panic(err)
 	}
-
+	sessions = SESSIONS
+	update_items(sessions)
+	sessions_mt.Unlock()
+	l.WithFields(logrus.Fields{
+		"qty": len(sessions),
+		"dur": time.Since(started),
+	}).Info(fmt.Sprintf("%d Sessions Loaded", len(sessions)))
+}
+func init() {
 	l.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
 		ForceColors:   true,
 		FullTimestamp: false,
 	})
-	l.SetReportCaller(true)
-
+	l.SetReportCaller(false)
 	file, err := os.OpenFile(LOG_FILE, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
 		l.Out = file
@@ -61,8 +72,14 @@ func init() {
 	}
 
 	l.WithFields(logrus.Fields{
-		"sessions": SESSIONS,
+		"sessions": sessions,
 	}).Info("Terminal UI Started")
+	go func() {
+		for {
+			monitor_sessions()
+			time.Sleep(5000 * time.Millisecond)
+		}
+	}()
 }
 
 func run() error {
@@ -77,34 +94,9 @@ func run() error {
 	_screen.EnableMouse()
 	app.SetScreen(_screen)
 
-	wform.AddButton("Restore", func() {
-		menu_bar.SetState(tuix.Restored)
-	})
-
-	wform.AddButton("Find Command", func() {
-		cmd := fmt.Sprintf(`find /etc|head -n 10; echo NO_ERR >&2`)
-		cmd = fmt.Sprintf(`journalctl -f`)
-		cmd_mutex.Lock()
-		defer cmd_mutex.Unlock()
-		cur_cmd = cmd
-		l.WithFields(logrus.Fields{
-			"cmd": cmd,
-		}).Info("Find Command")
-	})
-
-	wform.AddButton("New Terminal", func() {
-		//		AddNewTerminal(
-		menu_bar.SetState(tuix.Restored)
-	})
-	wform.AddButton("Maximize", func() {
-		menu_bar.SetState(tuix.Maximized)
-	})
-
-	menu_bar.SetRect(1, 1, 65, 5)
-
 	win2 := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
-	win2.SetTitle("Mode Selection")
-	win2.SetBorder(true).SetRect(68, 1, 40, 5)
+	win2.SetTitle("Session Selection")
+	win2.SetBorder(true).SetRect(68, 1, 40, 10)
 
 	win3 := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
 	win3.SetTitle("Mode Selection")
@@ -151,13 +143,12 @@ func run() error {
 	tv.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
 	tvr.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
 
-	menu_bar.SetClient(wform, true)
 	win3.SetClient(_list, true)
 	win2.SetClient(radioButtons, true)
 	win2l.SetClient(tv, true)
 	win2r.SetClient(tvr, true)
 
-	desktop.AddWindow(menu_bar).AddWindow(win2l).AddWindow(win2r).AddWindow(win3).AddWindow(win2).SetBackgroundColor(tcell.ColorBlack).SetTitle("Desktop").SetBorder(true)
+	desktop.AddWindow(menu_bar).AddWindow(lw).AddWindow(win2l).AddWindow(win2r).AddWindow(win2).AddWindow(win3).SetBackgroundColor(tcell.ColorBlack).SetTitle("Abduco Sessions").SetBorder(true)
 	app.SetRoot(desktop, true)
 	qty := 0
 	go func() {

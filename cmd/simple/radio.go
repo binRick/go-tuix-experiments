@@ -5,9 +5,10 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	logrus "github.com/sirupsen/logrus"
 )
 
-var radioButtons = NewRadioButtons([]string{"Lions", "Elephants", "Giraffes"})
+var radioButtons = NewRadioButtons([]string{"", "", "", "", ""})
 
 type RadioButtons struct {
 	*tview.Box
@@ -40,19 +41,27 @@ func (r *RadioButtons) InputHandler() func(event *tcell.EventKey, setFocus func(
 }
 
 func (r *RadioButtons) Draw(screen tcell.Screen) {
+	radio_mutex.Lock()
+	defer radio_mutex.Unlock()
 	r.Box.DrawForSubclass(screen, r)
 	x, y, width, height := r.GetInnerRect()
-
 	for index, option := range r.options {
 		if index >= height {
 			break
 		}
-		radioButton := "\u25ef" // Unchecked.
+		radioButton := " \u25ef" // Unchecked.
 		if index == r.currentOption {
-			radioButton = "\u25c9" // Checked.
+			radioButton = " \u25c9" // Checked.
 		}
 		line := fmt.Sprintf(`%s[white]  %s`, radioButton, option)
 		tview.Print(screen, line, x, y+index, width, tview.AlignLeft, tcell.ColorYellow)
+	}
+	if false {
+		l.WithFields(logrus.Fields{
+			"qty":     len(r.options),
+			"cur":     r.currentOption,
+			"options": fmt.Sprintf(`%s`, r.options),
+		}).Info("RadioButtons Drawn")
 	}
 }
 
@@ -71,6 +80,10 @@ func (r *RadioButtons) MouseHandler() func(action tview.MouseAction, event *tcel
 				r.currentOption = index
 				consumed = true
 			}
+			l.WithFields(logrus.Fields{
+				"qty": len(r.options),
+				"cur": r.currentOption,
+			}).Info("RadioButtons LeftClick")
 		}
 		return
 	})
