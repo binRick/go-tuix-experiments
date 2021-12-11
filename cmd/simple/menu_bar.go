@@ -1,15 +1,14 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/millerlogic/tuix"
 	"github.com/rivo/tview"
-	logrus "github.com/sirupsen/logrus"
 )
 
-var menu_bar = tuix.NewWindow().SetAutoPosition(false).SetTitle("Main Controls").SetBorder(true)
-var menu_bar_form = tview.NewForm().SetHorizontal(true)
+var (
+	menu_bar_form = tview.NewForm().SetHorizontal(true)
+	menu_bar      = tuix.NewWindow().SetAutoPosition(false).SetTitle("Main Controls").SetBorder(true)
+)
 
 func init() {
 	menu_bar.SetClient(menu_bar_form, true)
@@ -19,30 +18,30 @@ func init() {
 		60, 8,
 	)
 
-	menu_bar_form.AddButton("Restore", func() {
-		menu_bar.SetState(tuix.Restored)
+	menu_bar_form.AddCheckbox("Mode Enabled", true, func(en bool) {
+		l.Info("Mode Set!: ", en)
 	})
 
-	menu_bar_form.AddButton("Find Command", func() {
-		cmd := fmt.Sprintf(`find /etc|head -n 10; echo NO_ERR >&2`)
-		cmd = fmt.Sprintf(`journalctl -f`)
-		cmd_mutex.Lock()
-		defer cmd_mutex.Unlock()
-		cur_cmd = cmd
-		l.WithFields(logrus.Fields{
-			"cmd": cmd,
-		}).Info("Find Command")
-	})
+	//	menu_bar_form.AddButton("Restore", func() {
+	//		menu_bar.SetState(tuix.Restored)
+	//	})
+
+	AddCommandButton(menu_bar_form, `Tail Journal`, `command journalctl -f`, nil)
+	AddCommandButton(menu_bar_form, `List etc`, `command ls /etc`, nil)
+	AddCommandButton(menu_bar_form, `  w  `, `w`, nil)
+	AddCommandButton(menu_bar_form, `  sleep 5  `, `sleep 5`, nil)
+	AddCommandButton(menu_bar_form, `  stderr test  `, `>&2 date`, nil)
+
 	menu_bar_form.AddButton("Refresh", func() {
 		go monitor_sessions()
 	})
 	menu_bar_form.AddButton("Maximize", func() {
 		menu_bar.SetState(tuix.Maximized)
 	})
-	menu_bar_form.AddButton("Restart Session", func() {
-		menu_bar.SetState(tuix.Maximized)
-	})
-	menu_bar_form.AddButton("Kill Session", func() {
-		menu_bar.SetState(tuix.Maximized)
-	})
+	//	menu_bar_form.AddButton("Restart Session", func() {
+	//		menu_bar.SetState(tuix.Maximized)
+	//	})
+	//	menu_bar_form.AddButton("Kill Session", func() {
+	//		menu_bar.SetState(tuix.Maximized)
+	//	})
 }

@@ -24,7 +24,7 @@ func init() {
 			"session": mainText,
 		}).Info(fmt.Sprintf(`Tail Log File`))
 		go tail_log(mainText)
-		if false {
+		if DEBUG_MODE {
 			fmt.Fprintf(os.Stderr, "%s\n", pp.Sprintf(`%s`, app))
 		}
 	})
@@ -57,7 +57,7 @@ func update_items(sessions []ac.AbducoSession) {
 					continue
 				}
 				mm := pp.Sprintf("%s|%s\n%s\n", mainText, secondaryText, s)
-				if false {
+				if DEBUG_MODE {
 					fmt.Fprintf(os.Stderr, "%s\n", mm)
 				}
 				if strings.ToLower(mainText) == strings.ToLower(s.Session) {

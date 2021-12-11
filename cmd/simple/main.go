@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"sync"
@@ -12,13 +13,10 @@ import (
 	"github.com/rivo/tview"
 	logrus "github.com/sirupsen/logrus"
 
-	//ac "github.com/binRick/abduco-dev/go/abduco"
-	//ac "github.com/binRick/abduco-dev/go/abducoctl"
 	ac "github.com/binRick/abduco-dev/go/abducoctl"
-	//ac1 "github.com/binRick/abduco-dev/go/abducoctl"
-	//ac1 "github.com/binRick/abduco-dev/go/abducoctl"
 )
 
+var DEBUG_MODE = false
 var l = logrus.New()
 var LOG_FILE = `/tmp/logrus.log`
 var cmd_mutex sync.Mutex
@@ -34,8 +32,11 @@ var (
 	tv      = tview.NewTextView()
 	tvr     = tview.NewTextView()
 )
-var sessions = []ac.AbducoSession{}
-var sessions_mt sync.Mutex
+var (
+	sessions                 = []ac.AbducoSession{}
+	last_loaded_session_time = time.Now()
+	sessions_mt              sync.Mutex
+)
 
 func get_sessions() []ac.AbducoSession {
 	sessions_mt.Lock()
@@ -43,6 +44,7 @@ func get_sessions() []ac.AbducoSession {
 	sess := sessions
 	return sess
 }
+
 func monitor_sessions() {
 	sessions_mt.Lock()
 	started := time.Now()
@@ -50,16 +52,31 @@ func monitor_sessions() {
 	if err != nil {
 		panic(err)
 	}
+	if *debug_mode {
+		fmt.Fprintf(os.Stderr, "SESSIONS DEBUG: %s\n", pp.Sprintf(`%s`, SESSIONS))
+		os.Exit(1)
+	}
 	sessions = SESSIONS
 	update_items(sessions)
 	sessions_mt.Unlock()
 	l.WithFields(logrus.Fields{
-		"qty": len(sessions),
-		"dur": time.Since(started),
-	}).Info(fmt.Sprintf("%d Sessions Loaded", len(sessions)))
+		"qty":   len(sessions),
+		"dur":   time.Since(started),
+		"since": time.Since(last_loaded_session_time),
+	}).Debug(fmt.Sprintf("%d Sessions Loaded", len(sessions)))
+	if DEBUG_MODE {
+		pp.Fprintf(os.Stderr, "SESSIONS:         %s\n", sessions)
+	}
+	last_loaded_session_time = time.Now()
 }
 
 var monitor_once sync.Once
+
+func get_fields() *logrus.Fields {
+	return &logrus.Fields{
+		"pid": os.Getpid(),
+	}
+}
 
 func init() {
 	app.SetMouseCapture(func(event *tcell.EventMouse, action tview.MouseAction) (*tcell.EventMouse, tview.MouseAction) {
@@ -83,8 +100,33 @@ func init() {
 		panic(err)
 	}
 
+}
+
+type SCREEN struct {
+	screen tcell.Screen
+}
+
+var Screen *SCREEN
+
+func init() {
+	Screen = &SCREEN{}
+}
+func run() error {
+	_screen, err := tcell.NewScreen()
+	if err != nil {
+		panic(err)
+	}
+	Screen.screen = _screen
+	err = Screen.screen.Init()
+	if err != nil {
+		panic(err)
+	}
+	Screen.screen.EnableMouse()
+	app.SetScreen(Screen.screen)
+	w, h := Screen.screen.Size()
 	l.WithFields(logrus.Fields{
 		"sessions": sessions,
+		"width":    w, "height": h,
 	}).Info("Terminal UI Started")
 	monitor_once.Do(func() {
 		go func() {
@@ -94,22 +136,28 @@ func init() {
 			}
 		}()
 	})
-}
 
-func run() error {
-	_screen, err := tcell.NewScreen()
-	if err != nil {
-		panic(err)
-	}
-	err = _screen.Init()
-	if err != nil {
-		panic(err)
-	}
-	_screen.EnableMouse()
-	app.SetScreen(_screen)
+	//w, h := _screen.Size()
+	//pp.Println(w, h)
+	//os.Exit(1)
 
 	win2 := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
-	win2.SetTitle("Session Selection")
+	go func() {
+		on := 0
+		for {
+			s := string([]rune{clocks[on]})
+			win2.SetTitle(fmt.Sprintf("Session Selection  %s|%d  ",
+				s,
+				on,
+			))
+			app.Draw()
+			time.Sleep(1 * time.Second)
+			on++
+			if on >= len(clocks) {
+				on = 0
+			}
+		}
+	}()
 	win2.SetBorder(true).SetRect(68, 1, 40, 10)
 
 	win3 := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
@@ -135,7 +183,9 @@ func run() error {
 	})
 
 	tv.SetTextColor(tcell.ColorGreen)
+	tv.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true)
 	tvr.SetTextColor(tcell.ColorRed)
+	tvr.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true)
 
 	tvrt := ``
 	tvr.SetDoneFunc(func(key tcell.Key) {
@@ -162,21 +212,34 @@ func run() error {
 	win2l.SetClient(tv, true)
 	win2r.SetClient(tvr, true)
 
-	desktop.AddWindow(menu_bar).AddWindow(lw).AddWindow(win2l).AddWindow(win2r).AddWindow(win2).AddWindow(win3).SetBackgroundColor(tcell.ColorBlack).SetTitle("Abduco Sessions").SetBorder(true)
+	desktop.AddWindow(lw).AddWindow(win2l).AddWindow(win2r).AddWindow(win2).AddWindow(win3).AddWindow(menu_bar).SetBackgroundColor(tcell.ColorBlack).SetTitle("Abduco Sessions").SetBorder(true)
 	app.SetRoot(desktop, true)
-	qty := 0
-	go func() {
-		for {
-			run_cmd(cur_cmd, tv, tvr)
-			qty++
-			time.Sleep(1000 * time.Millisecond)
-		}
-	}()
-
 	return app.Run()
 }
 
+var cmds_ran_qty = 0
+var cmd_runner_mutex sync.Mutex
+var cmd_runner_once sync.Once
+
+func cmd_runner() {
+	if false {
+		cmd_runner_once.Do(func() {
+			for {
+				cmd_runner_mutex.Lock()
+				l.WithFields(logrus.Fields{
+					"cmd": cur_cmd,
+				}).Info(fmt.Sprintf("<%d> Running Command #%d", os.Getpid(), cmds_ran_qty))
+				run_cmd_in_new_context(cur_cmd, tv, tvr)
+				cmds_ran_qty++
+				cmd_runner_mutex.Unlock()
+				time.Sleep(1000 * time.Millisecond)
+			}
+		})
+	}
+}
+
 func main() {
+	flag.Parse()
 	err := run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
