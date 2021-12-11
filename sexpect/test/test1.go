@@ -8,9 +8,7 @@ import (
 )
 
 func main() {
-	pp.Println(`ok2`)
-	pp.Fprintf(os.Stderr, "ok3\n")
 	sessions, _ := sexpect.SexpectSessions()
 	pp.Println(sessions)
-	os.Exit(1)
+	os.Exit(0)
 }
