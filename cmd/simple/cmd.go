@@ -37,13 +37,8 @@ func run_cmd_in_context(ctx context.Context, cmd string, stdout, stderr *tview.T
 	if err != nil {
 		panic(err)
 	}
-	if false {
-		go io.Copy(stdout, o)
-		go io.Copy(stderr, e)
-	} else {
-		go copyAndCapture(stdout, o)
-		go copyAndCapture(stderr, e)
-	}
+	go copyAndCapture(stdout, o)
+	go copyAndCapture(stderr, e)
 	l.WithFields(logrus.Fields{"cmd": cmd}).Info("Command Started inside existing context")
 	serr := c.Start()
 	if serr != nil {

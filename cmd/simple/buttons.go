@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/rivo/tview"
 	logrus "github.com/sirupsen/logrus"
@@ -23,6 +24,7 @@ func AddCommandButton(form *tview.Form, title string, command string, cb func())
 			"prev_cmd": prev_cmd,
 			"cur_cmd":  cur_cmd,
 			"title":    title,
+			"pid":      os.Getpid(),
 		}).Info(fmt.Sprintf("New Command Loaded: %s", title))
 	})
 }

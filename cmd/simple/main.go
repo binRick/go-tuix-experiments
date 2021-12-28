@@ -137,18 +137,18 @@ func run() error {
 		}()
 	})
 
-	//w, h := _screen.Size()
-	//pp.Println(w, h)
-	//os.Exit(1)
-
-	win2 := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
+	win_loader := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
 	go func() {
 		on := 0
 		for {
 			s := string([]rune{clocks[on]})
-			win2.SetTitle(fmt.Sprintf("Session Selection  %s|%d  ",
+			if (on%5) == 0 || on == 0 {
+				update_sexpect_sessions()
+			}
+			win_loader.SetTitle(fmt.Sprintf(" <%s> %d Sessions in %s",
 				s,
-				on,
+				len(get_sexpect_sessions()),
+				current_sessions_dur,
 			))
 			app.Draw()
 			time.Sleep(1 * time.Second)
@@ -158,7 +158,7 @@ func run() error {
 			}
 		}
 	}()
-	win2.SetBorder(true).SetRect(68, 1, 40, 10)
+	win_loader.SetBorder(true).SetRect(68, 1, 40, 10)
 
 	win3 := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
 	win3.SetTitle("Mode Selection")
@@ -166,11 +166,11 @@ func run() error {
 
 	win2l := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
 	win2l.SetTitle("Window 2 Left")
-	win2l.SetBorder(true).SetRect(6, 30, 70, 20)
+	win2l.SetBorder(true).SetRect(6, 5, 1, 1)
 
 	win2r := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
 	win2r.SetTitle("Window 2 Right")
-	win2r.SetBorder(true).SetRect(80, 30, 70, 20)
+	win2r.SetBorder(true).SetRect(10, 5, 1, 1)
 
 	win2l.SetClient(wform2, true)
 	win2r.SetClient(wform2r, true)
@@ -208,11 +208,11 @@ func run() error {
 	tvr.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
 
 	win3.SetClient(_list, true)
-	win2.SetClient(radioButtons, true)
+	win_loader.SetClient(radioButtons, true)
 	win2l.SetClient(tv, true)
 	win2r.SetClient(tvr, true)
 
-	desktop.AddWindow(lw).AddWindow(win2l).AddWindow(win2r).AddWindow(win2).AddWindow(win3).AddWindow(menu_bar).SetBackgroundColor(tcell.ColorBlack).SetTitle("Sessions").SetBorder(true)
+	desktop.AddWindow(win2l).AddWindow(win2r).AddWindow(win_loader).AddWindow(win3).AddWindow(menu_bar).SetBackgroundColor(tcell.ColorBlack).SetTitle("Sessions").SetBorder(true)
 	app.SetRoot(desktop, true)
 	return app.Run()
 }

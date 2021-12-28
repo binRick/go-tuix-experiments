@@ -5,55 +5,72 @@ import (
 
 	"github.com/millerlogic/tuix"
 	"github.com/rivo/tview"
+	logrus "github.com/sirupsen/logrus"
 )
 
 func get_session_log_path(session_id string) string {
 	return fmt.Sprintf(`/tmp/%s-passh-stdout.log`, session_id)
 }
 
+func new_log_window(title string, width, height int, x, y int) *tuix.Window {
+	lw := tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
+	lw.SetBorder(true).SetRect(
+		width, height,
+		x, y,
+	)
+	lw.SetTitle(title)
+	lw.SetClient(new_log_view(title), true)
+	lw.Focus(func(p tview.Primitive) {
+		l.WithFields(logrus.Fields{
+			"title": title,
+		}).Info("Log Window Focused")
+	})
+	desktop.AddWindow(lw)
+	return lw
+}
+
+func new_log_view(title string) *tview.TextView {
+	lv := tview.NewTextView().
+		SetDynamicColors(true).
+		SetRegions(true).
+		SetWordWrap(true)
+	lv.SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
+
+	lv.Focus(func(p tview.Primitive) {
+		r, c := lv.GetScrollOffset()
+		f := lv.HasFocus()
+		l.WithFields(logrus.Fields{
+			"title": title,
+			"row":   r, "col": c,
+			"focused": f,
+		}).Info("Log View Focused")
+	})
+	lv.SetChangedFunc(func() {
+		go func() {
+			r, c := lv.GetScrollOffset()
+			f := lv.HasFocus()
+			l.WithFields(logrus.Fields{
+				"title": title,
+				"row":   r, "col": c,
+				"focused": f,
+			}).Info("Log View Updated")
+			if r == 0 {
+				lv.ScrollToEnd()
+			}
+			app.Draw()
+		}()
+	})
+	return lv
+}
+
 var (
-	lw       = tuix.NewWindow().SetAutoPosition(false).SetResizable(true)
-	log_view = tview.NewTextView().
-			SetDynamicColors(true).
-			SetRegions(true).
-			SetWordWrap(true)
+	stdin_window = new_log_window("stdin", 1, 25, 155, 20)
+	//stdin_window.Focus(func(p tview.Primitive){
+	//fmt.Fprintf(os.Stderr, "stdin focus\n", )
+	//})
+	stdout_window = new_log_window("stdout", 1, 45, 155, 11)
+	stderr_window = new_log_window("stderr", 1, 58, 155, 11)
 )
 
 func init() {
-	lw.SetTitle("Log Window")
-	lw.SetBorder(true).SetRect(
-		1,
-		60,
-		155, 11,
-	)
-	lw.SetClient(tree, true)
-
-	log_view.SetChangedFunc(func() {
-		app.Draw()
-	})
-	log_view.SetWordWrap(true).SetDynamicColors(true).SetScrollable(true).SetBorderPadding(1, 1, 1, 1)
-	lw.SetClient(log_view, true)
-	/*
-		log_view.SetDoneFunc(func(key tcell.Key) {
-			currentSelection := log_view.GetHighlights()
-			if key == tcell.KeyEnter {
-				if len(currentSelection) > 0 {
-					log_view.Highlight()
-				} else {
-					log_view.Highlight("0").ScrollToHighlight()
-				}
-			} else if len(currentSelection) > 0 {
-				index, _ := strconv.Atoi(currentSelection[0])
-				if key == tcell.KeyTab {
-					index = (index + 1) % numSelections
-				} else if key == tcell.KeyBacktab {
-					index = (index - 1 + numSelections) % numSelections
-				} else {
-					return
-				}
-				log_view.Highlight(strconv.Itoa(index)).ScrollToHighlight()
-			}
-		})
-		log_view.SetBorder(true)
-	*/
 }

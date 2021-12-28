@@ -1,17 +1,8 @@
 package sexpect
 
 import (
-	"bufio"
-	"fmt"
-	"os"
 	"os/exec"
 	"reflect"
-	"strconv"
-	"strings"
-
-	"github.com/k0kubun/pp"
-	gops "github.com/mitchellh/go-ps"
-	ps "github.com/shirou/gopsutil/v3/process"
 )
 
 func get_cmd() *exec.Cmd {
@@ -59,6 +50,7 @@ func reverseInts(input []int) []int {
 	return append(reverseInts(input[1:]), input[0])
 }
 
+/*
 func List() ([]Session, error) {
 	var ass []Session
 	cmd := get_cmd()
@@ -177,3 +169,5 @@ func List() ([]Session, error) {
 	}
 	return ass, nil
 }
+
+*/

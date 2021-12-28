@@ -48,7 +48,7 @@ func tail_log(session string) {
 			}).Info(fmt.Sprintf(`TAIL- %d bytes: %s`, len(line.Text), line.Text))
 		}
 		if len(strings.Trim(line.Text, ` `)) > 0 {
-			fmt.Fprintf(log_view, "%s> %s\n", session, line.Text)
+			//fmt.Fprintf(log_view, "%s> %s\n", session, line.Text)
 		}
 	}
 }
