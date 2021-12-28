@@ -25,10 +25,14 @@ func SexpectSessions() ([]Session, error) {
 		conns, _ := proc.Connections()
 		un, _ := proc.Username()
 		of, _ := proc.OpenFiles()
+		env := get_extracted_env(proc)
 		ass = append(ass, Session{
 			PID:            int(proc.Pid),
 			CreateTime:     ct,
 			Cmdline:        cmdl,
+			Environ:        env,
+			StdoutLog:      env["STDOUT_LOG_FILE"],
+			StderrLog:      env["STDERR_LOG_FILE"],
 			MemoryPercent:  mp,
 			CPUPercent:     cp,
 			Cwd:            cwd,

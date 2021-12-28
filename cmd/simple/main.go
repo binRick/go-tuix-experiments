@@ -212,7 +212,7 @@ func run() error {
 	win2l.SetClient(tv, true)
 	win2r.SetClient(tvr, true)
 
-	desktop.AddWindow(lw).AddWindow(win2l).AddWindow(win2r).AddWindow(win2).AddWindow(win3).AddWindow(menu_bar).SetBackgroundColor(tcell.ColorBlack).SetTitle("Abduco Sessions").SetBorder(true)
+	desktop.AddWindow(lw).AddWindow(win2l).AddWindow(win2r).AddWindow(win2).AddWindow(win3).AddWindow(menu_bar).SetBackgroundColor(tcell.ColorBlack).SetTitle("Sessions").SetBorder(true)
 	app.SetRoot(desktop, true)
 	return app.Run()
 }

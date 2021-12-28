@@ -20,14 +20,14 @@ func get_cmd() *exec.Cmd {
 }
 
 type Session struct {
-	PPID        int
-	PID         int
-	PIDs        []int
-	Threads     int
-	Session     string
-	Executable  string
-	Executables []string
-	//  Environ        []string
+	PPID           int
+	PID            int
+	PIDs           []int
+	Threads        int
+	Session        string
+	Executable     string
+	Executables    []string
+	Environ        map[string]string
 	Started        string
 	Username       string
 	Cmdline        string
@@ -39,6 +39,9 @@ type Session struct {
 	CreateTime     int64
 	CPUPercent     float64
 	MemoryPercent  float32
+
+	StdoutLog string
+	StderrLog string
 }
 
 func ReverseSlice(s interface{}) {
@@ -81,6 +84,7 @@ func List() ([]Session, error) {
 						cl = append(cl, c)
 					}
 				}
+				DEBUG_MODE = true
 				if DEBUG_MODE {
 					pp.Fprintf(os.Stderr, "CL: %s\n", cl)
 				}
@@ -116,6 +120,15 @@ func List() ([]Session, error) {
 					if DEBUG_MODE {
 						pp.Fprintf(os.Stderr, "C:    %s\n", cl)
 					}
+					env, err := proc.Environ()
+					if err != nil {
+						panic(err)
+					}
+					pp.Println("proc env:", env)
+					//os.Exit(1)
+					e := map[string]string{
+						"xxxxxxxx": "1111111111111",
+					}
 					ct, _ := proc.CreateTime()
 					mp, _ := proc.MemoryPercent()
 					cp, _ := proc.CPUPercent()
@@ -131,6 +144,7 @@ func List() ([]Session, error) {
 						PPID:           int(p.PPid()),
 						PIDs:           pids,
 						Threads:        threads,
+						Environ:        e,
 						CreateTime:     ct,
 						Executables:    executables,
 						Cmdline:        cmdl,

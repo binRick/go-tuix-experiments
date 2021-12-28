@@ -9,6 +9,6 @@ import (
 
 func main() {
 	sessions, _ := sexpect.SexpectSessions()
-	pp.Println(sessions)
+	pp.Fprintf(os.Stderr, "%s Sessions: %s\n", len(sessions), sessions)
 	os.Exit(0)
 }
